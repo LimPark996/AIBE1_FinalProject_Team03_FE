@@ -157,6 +157,7 @@ export default function SeatSelectionPage() {
                     <div className="lg:w-1/3 lg:max-w-sm">
                         <SelectionPanel
                             selectedSeats={selectedSeats}
+                            concertId={concertId}
                             timer={timer}
                             onClear={handleClearSelection}
                             onRemove={handleRemoveSeat}
