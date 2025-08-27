@@ -286,20 +286,6 @@ export default function Login() {
                                 카카오로 계속하기
                             </button>
 
-                            {/* Naver */}
-                            <button
-                                onClick={() => handleSocialLogin('naver')}
-                                className="w-full flex items-center justify-center px-4 py-3 rounded-lg bg-[#03C75A] text-white hover:bg-green-600 transition-colors font-medium"
-                            >
-                                <div className="w-5 h-5 mr-3 flex items-center justify-center">
-                                    <span className="text-white text-xs font-bold">
-                                        N
-                                    </span>
-                                </div>
-                                네이버로 계속하기
-                            </button>
-                        </div>
-
                         {/* 회원가입 링크 */}
                         <div className="text-center pt-6 mt-6 border-t border-gray-600">
                             <p className="text-gray-400 text-sm">
