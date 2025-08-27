@@ -285,7 +285,7 @@ export default function Login() {
                                 </div>
                                 카카오로 계속하기
                             </button>
-
+                        </div>
                         {/* 회원가입 링크 */}
                         <div className="text-center pt-6 mt-6 border-t border-gray-600">
                             <p className="text-gray-400 text-sm">
