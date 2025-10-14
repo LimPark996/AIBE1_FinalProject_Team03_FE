@@ -24,6 +24,9 @@ export default function SeatMap({
     isReserving = false,
 }) {
     const [blinkingSeat, setBlinkingSeat] = useState(null);
+
+    const sectionOrder = ['VIP', 'R', 'S', 'A'];
+
     // 1. 좌석 데이터를 '섹션 > 열 > 좌석 배열' 구조로 그룹핑합니다.
     const sections = seatStatuses.reduce((acc, seat) => {
         const [section, row, numStr] = seat.seatInfo.split('-');
@@ -59,8 +62,8 @@ export default function SeatMap({
 
             {/* 2. 섹션별로 반복하여 렌더링 */}
             <div className="space-y-12">
-                {Object.keys(sections)
-                    .sort()
+                {sectionOrder
+                    .filter((sectionName) => sections[sectionName])  // 존재하는 섹션만
                     .map((sectionName) => (
                         <div key={sectionName}>
                             <h3 className="text-xl font-bold text-center text-white mb-4">
