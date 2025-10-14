@@ -69,19 +69,17 @@ export default function SeatMap({
                             {/* 3. 열(row)별로 반복 */}
                             <div className="space-y-4">
                                 {Object.keys(sections[sectionName])
-                                    .map(Number)
-                                    .sort((a, b) => a - b)
-                                    .map((rowNum) => (
+                                    .map((rowName) => (
                                         <div
-                                            key={rowNum}
+                                            key={rowName}
                                             className="flex items-center gap-4"
                                         >
                                             <span className="w-8 text-gray-400 text-sm">
-                                                {rowNum}열
+                                                {rowName}열
                                             </span>
                                             <div className="flex-grow flex justify-center gap-2">
                                                 {/* 4. 개별 좌석 렌더링 */}
-                                                {sections[sectionName][rowNum]
+                                                {sections[sectionName][rowName]
                                                     .sort(
                                                         (a, b) => a.num - b.num,
                                                     )
