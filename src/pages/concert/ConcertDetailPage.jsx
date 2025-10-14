@@ -574,7 +574,8 @@ function ConcertDetailPage() {
                                     {Number(grade.price).toLocaleString()}원
                                 </span>
                             </div>
-                        ))}
+                        ))
+                    )}
 
                         <button
                             onClick={enterQueue}
