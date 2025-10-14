@@ -298,8 +298,64 @@ export const concertService = {
             throw error;
         }
     },
-    // src/features/concert/services/concertService.js에 추가할 코드
 
+    /**
+     * 콘서트의 좌석 등급 정보 조회 (기존 seat-layout API 활용)
+     * 백엔드: GET /api/concerts/{concertId}/seat-layout
+     * @param {number} concertId - 콘서트 ID
+     * @returns {Promise<Array>} 좌석 등급 정보 (grade, gradeName, price, availableSeats, totalSeats)
+     */
+     async getSeatGrades(concertId) {
+         try {
+             console.log('🎫 좌석 등급 정보 조회 시작:', { concertId });
+
+             // 기존 seat-layout API 호출
+             const response = await apiClient.get(`/concerts/${concertId}/seat-layout`);
+
+             // sections에서 필요한 정보만 추출
+             const gradeMap = { 'VIP': 0, 'R': 1, 'S': 2, 'A': 3 };
+
+             const seatGrades = response.data.sections
+                 .map(section => ({
+                     grade: gradeMap[section.sectionName] || 0,
+                     gradeName: section.sectionDescription,
+                     price: section.priceRange.minPrice, // 동일 등급은 동일 가격
+                     availableSeats: section.availableSeats,
+                     totalSeats: section.totalSeats
+                 }))
+                 .sort((a, b) => a.grade - b.grade); // 등급 순서 정렬 (VIP → R → S → A)
+
+             console.log('✅ 좌석 등급 정보 조회 성공:', {
+                 concertId,
+                 등급수: seatGrades.length,
+                 등급목록: seatGrades.map(g => g.gradeName)
+             });
+
+             return seatGrades;
+
+         } catch (error) {
+             console.error(`❌ 좌석 등급 정보 조회 실패 (ID: ${concertId}):`, error);
+
+             // 에러 메시지 개선
+             let errorMessage = '좌석 등급 정보를 불러올 수 없습니다.';
+
+             if (error.response) {
+                 const status = error.response.status;
+                 switch (status) {
+                     case 404:
+                         errorMessage = '콘서트를 찾을 수 없습니다.';
+                         break;
+                     case 500:
+                         errorMessage = '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+                         break;
+                 }
+             } else if (error.code === 'NETWORK_ERROR' || error.code === 'ECONNREFUSED') {
+                 errorMessage = '네트워크 연결을 확인해주세요.';
+             }
+
+             throw new Error(errorMessage);
+         }
+     },
     /**
      * 판매자용 AI 요약 수동 재생성
      * 백엔드: POST /api/seller/concerts/{concertId}/ai-summary/regenerate?sellerId={sellerId}

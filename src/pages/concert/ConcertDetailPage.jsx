@@ -1,8 +1,6 @@
-// src/pages/concert/ConcertDetailPage.jsx
 import React, { useState, useContext, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
-// 새로운 컴포넌트들 import
 import ConcertDetail from '../../features/concert/components/ConcertDetail.jsx';
 import AISummary from '../../features/concert/components/AISummary.jsx';
 import ReviewList from '../../features/concert/components/ReviewList.jsx';
@@ -12,11 +10,11 @@ import ReviewForm from '../../features/concert/components/ReviewForm.jsx';
 import ExpectationForm from '../../features/concert/components/ExpectationForm.jsx';
 import { AuthContext } from '../../context/AuthContext.jsx';
 
-// 새로운 hooks import
 import { useConcertDetail } from '../../features/concert/hooks/useConcertDetail.js';
 import { useReviews } from '../../features/concert/hooks/useReviews.js';
 import { useExpectations } from '../../features/concert/hooks/useExpectations.js';
 import { useBookingQueue } from '../../features/booking/hooks/useBookingQueue';
+import { useSeatGrades } from '../../features/concert/hooks/useSeatGrades';
 
 // 🎯 반응형 Hook 추가
 const useResponsive = () => {
@@ -143,6 +141,8 @@ function ConcertDetailPage() {
     } = useExpectations(parsedConcertId);
 
     const { enterQueue, isEntering } = useBookingQueue(concertId);
+
+    const { seatGrades, loading: gradesLoading, error: gradesError } = useSeatGrades(parsedConcertId);
 
     // 리뷰 클릭 핸들러 (상세보기나 수정 등)
     const handleReviewClick = (review) => {
@@ -535,13 +535,22 @@ function ConcertDetailPage() {
                         >
                             티켓 등급 및 가격
                         </h2>
-                        {[
-                            { type: '일반석', price: 50000 },
-                            { type: 'VIP', price: 100000 },
-                            { type: '프리미엄', price: 150000 },
-                        ].map((ticket) => (
+                        {gradesLoading ? (
+                            <div className="text-gray-400 text-sm py-4">
+                                가격 정보를 불러오는 중...
+                            </div>
+                        ) : gradesError ? (
+                            <div className="text-red-400 text-sm py-4">
+                                {gradesError}
+                            </div>
+                        ) : seatGrades.length === 0 ? (
+                            <div className="text-gray-400 text-sm py-4">
+                                좌석 정보가 없습니다.
+                            </div>
+                        ) : (
+                            seatGrades.map((grade) => (
                             <div
-                                key={ticket.type}
+                                key={grade.grade}
                                 className="flex justify-between rounded-lg shadow-sm"
                                 style={{
                                     backgroundColor: '#374151',
@@ -556,13 +565,13 @@ function ConcertDetailPage() {
                                     className={`font-semibold ${isMobile ? 'text-sm' : 'text-base'}`}
                                     style={{ color: '#FFFFFF' }}
                                 >
-                                    {ticket.type}
+                                    {grade.gradeName}
                                 </span>
                                 <span
                                     className={`font-bold ${isMobile ? 'text-sm' : 'text-base'}`}
                                     style={{ color: '#3B82F6' }}
                                 >
-                                    {ticket.price.toLocaleString()}원
+                                    {Number(grade.price).toLocaleString()}원
                                 </span>
                             </div>
                         ))}
