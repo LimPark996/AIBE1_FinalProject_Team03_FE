@@ -68,6 +68,11 @@ function ConcertDetailPage() {
             statusText: '취소됨',
             color: 'text-gray-600',
         },
+        BOOKING_CLOSED: {
+            buttonText: '예매 종료',
+            statusText: '예매 종료',
+            color: 'text-blue-600',
+        },
         SCHEDULED: {
             buttonText: '예매 대기',
             statusText: '예매 대기',
@@ -614,6 +619,7 @@ function ConcertDetailPage() {
                                 concert.status === 'SOLD_OUT' ||
                                 concert.status === 'CANCELLED' ||
                                 concert.status === 'COMPLETED' ||
+                                concert.status === 'BOOKING_CLOSED' ||
                                 concert.status === 'SCHEDULED' ||
                                 isEntering
                             }

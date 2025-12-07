@@ -1316,6 +1316,7 @@ const ConcertForm = ({
                         <option value="SCHEDULED">예정됨</option>
                         <option value="ON_SALE">예매중</option>
                         <option value="SOLD_OUT">매진</option>
+                        <option value="BOOKING_CLOSED">예매 종료</option>
                         <option value="CANCELLED">취소됨</option>
                         <option value="COMPLETED">완료됨</option>
                     </select>

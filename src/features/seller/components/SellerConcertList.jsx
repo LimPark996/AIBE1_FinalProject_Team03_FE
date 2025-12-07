@@ -268,6 +268,7 @@ const SellerConcertList = ({
             },
             ON_SALE: { color: 'bg-green-600 text-green-100', text: '예매중' },
             SOLD_OUT: { color: 'bg-red-600 text-red-100', text: '매진' },
+            BOOKING_CLOSED: { color: 'bg-blue-600 text-blue-100', text: '예매 종료' },
             CANCELLED: { color: 'bg-gray-600 text-gray-100', text: '취소됨' },
             COMPLETED: {
                 color: 'bg-purple-600 text-purple-100',
@@ -645,9 +646,11 @@ const SellerConcertList = ({
                                             ? '예매중'
                                             : filters.status === 'SOLD_OUT'
                                               ? '매진'
-                                              : filters.status === 'CANCELLED'
-                                                ? '취소됨'
-                                                : '완료됨'}
+                                              : filters.status === 'BOOKING_CLOSED'
+                                                ? '예매 종료'
+                                                  : filters.status === 'CANCELLED'
+                                                    ? '취소됨'
+                                                    : '완료됨'}
                                 </span>
                                 <ChevronDown
                                     size={16}
@@ -669,6 +672,7 @@ const SellerConcertList = ({
                                             'SCHEDULED',
                                             'ON_SALE',
                                             'SOLD_OUT',
+                                            "BOOKING_CLOSED",
                                             'CANCELLED',
                                             'COMPLETED',
                                         ].map((status) => (
@@ -691,10 +695,12 @@ const SellerConcertList = ({
                                                         ? '예매중'
                                                         : status === 'SOLD_OUT'
                                                           ? '매진'
-                                                          : status ===
-                                                              'CANCELLED'
-                                                            ? '취소됨'
-                                                            : '완료됨'}
+                                                          : status === 'BOOKING_CLOSED'
+                                                            ? '예매 종료'
+                                                              : status ===
+                                                                  'CANCELLED'
+                                                                    ? '취소됨'
+                                                                    : '완료됨'}
                                             </button>
                                         ))}
                                     </div>
@@ -709,6 +715,7 @@ const SellerConcertList = ({
                                 'SCHEDULED',
                                 'ON_SALE',
                                 'SOLD_OUT',
+                                'BOOKING_CLOSED',
                                 'CANCELLED',
                                 'COMPLETED',
                             ].map((status) => (
@@ -729,9 +736,11 @@ const SellerConcertList = ({
                                             ? '예매중'
                                             : status === 'SOLD_OUT'
                                               ? '매진'
-                                              : status === 'CANCELLED'
-                                                ? '취소됨'
-                                                : '완료됨'}
+                                              : status === 'BOOKING_CLOSED'
+                                                ? '예매 종료'
+                                                  : status === 'CANCELLED'
+                                                    ? '취소됨'
+                                                    : '완료됨'}
                                 </button>
                             ))}
                         </div>

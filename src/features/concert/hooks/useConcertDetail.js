@@ -310,6 +310,7 @@ export const useConcertDetail = (concertId = null) => {
         isScheduled: concert?.status === 'SCHEDULED', // 예매 대기 상태인지
         isOnSale: concert?.status === 'ON_SALE', // 예매 중인지
         isSoldOut: concert?.status === 'SOLD_OUT', // 매진인지
+        isBookingClosed: concert?.status === 'BOOKING_CLOSED', // 예매 종료인지
         isCancelled: concert?.status === 'CANCELLED', // 취소된지
         isCompleted: concert?.status === 'COMPLETED', // 완료된지
     };

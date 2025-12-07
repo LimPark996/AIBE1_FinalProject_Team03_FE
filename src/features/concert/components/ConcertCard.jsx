@@ -120,6 +120,8 @@ const ConcertCard = ({ concert, onClick, className = '' }) => {
                 return 'bg-green-600 text-green-100';
             case 'SOLD_OUT':
                 return 'bg-red-600 text-red-100';
+            case 'BOOKING_CLOSED':
+                return 'bg-blue-600 text-blue-100';
             case 'CANCELLED':
                 return 'bg-gray-600 text-gray-100';
             case 'COMPLETED':

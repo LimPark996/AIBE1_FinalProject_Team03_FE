@@ -248,6 +248,13 @@ const ConcertDetail = ({
                     disabled: true,
                     style: { backgroundColor: '#dc2626', color: '#ffffff' },
                 };
+            case 'BOOKING_CLOSED':
+                return {
+                    show: true,
+                    text: '예매 종료',
+                    disabled: true,
+                    style: { backgroundColor: '#ea580c', color: '#ffffff' },
+                };
             case 'CANCELLED':
                 return {
                     show: false,
@@ -307,6 +314,12 @@ const ConcertDetail = ({
                     ...baseStyles,
                     backgroundColor: '#f3f4f6',
                     color: '#374151',
+                };
+            case 'BOOKING_CLOSED':
+                return {
+                    ...baseStyles,
+                    backgroundColor: '#fed7aa',
+                    color: '#c2410c',
                 };
             case 'COMPLETED':
                 return {
