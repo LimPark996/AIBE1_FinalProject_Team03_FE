@@ -147,5 +147,5 @@ npm run dev
 
 ## 📎 관련 링크
 
-- [Backend Repository](https://github.com/AIBE-3Team/AIBE1_FinalProject_Team03_BE)
+- [Backend Repository](https://github.com/LimPark996/Ticketing-Website_BE)
 - [프론트엔드 폴더 구조 가이드](./ARCHITECTURE_GUIDE.md)
