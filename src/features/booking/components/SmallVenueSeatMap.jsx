@@ -54,11 +54,13 @@ export default function SmallVenueSeatMap({
 
     // 좌석 데이터를 섹션 > 열 > 좌석 구조로 그룹핑
     const sections = seatStatuses.reduce((acc, seat) => {
-        const [section, row, numStr] = seat.seatInfo.split('-');
-        const num = parseInt(numStr, 10);
-        if (!acc[section]) acc[section] = {};
-        if (!acc[section][row]) acc[section][row] = [];
-        acc[section][row].push({ ...seat, num, section, row });
+        const grade = seat.grade;  // "VIP", "R", "S", "A"
+        const row = seat.seatRow;
+        const num = seat.seatNumber;
+
+        if (!acc[grade]) acc[grade] = {};
+        if (!acc[grade][row]) acc[grade][row] = [];
+        acc[grade][row].push({ ...seat, num, row });
         return acc;
     }, {});
 
@@ -172,9 +174,9 @@ export default function SmallVenueSeatMap({
 function GradePriceInfo({ seatStatuses }) {
     // 등급별 가격 추출
     const gradeInfo = seatStatuses.reduce((acc, seat) => {
-        const [section] = seat.seatInfo.split('-');
-        if (!acc[section]) {
-            acc[section] = seat.price;
+        const grade = seat.grade;  // "VIP", "R", "S", "A"
+        if (!acc[grade]) {
+            acc[grade] = seat.price;
         }
         return acc;
     }, {});

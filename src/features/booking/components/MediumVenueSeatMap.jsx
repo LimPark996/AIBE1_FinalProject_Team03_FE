@@ -70,32 +70,33 @@ export default function MediumVenueSeatMap({
     const sectionData = useMemo(() => {
         const data = {};
 
-        seatStatuses.forEach((seat) => {
-            const [section, row, numStr] = seat.seatInfo.split('-');
-            const num = parseInt(numStr, 10);
+         seatStatuses.forEach((seat) => {
+                const grade = seat.grade;  // "VIP", "R", "S", "A"
+                const row = seat.seatRow;
+                const num = seat.seatNumber;
 
-            if (!data[section]) {
-                data[section] = {
-                    rows: {},
-                    totalSeats: 0,
-                    availableSeats: 0,
-                    price: seat.price,
-                };
-            }
+            if (!data[grade]) {
+                        data[grade] = {
+                            rows: {},
+                            totalSeats: 0,
+                            availableSeats: 0,
+                            price: seat.price,
+                        };
+                    }
 
-            if (!data[section].rows[row]) {
-                data[section].rows[row] = [];
-            }
+                    if (!data[grade].rows[row]) {
+                        data[grade].rows[row] = [];
+                    }
 
-            data[section].rows[row].push({ ...seat, num, section, row });
-            data[section].totalSeats++;
-            if (seat.status === 'AVAILABLE') {
-                data[section].availableSeats++;
-            }
-        });
+                    data[grade].rows[row].push({ ...seat, num, row });
+                    data[grade].totalSeats++;
+                    if (seat.status === 'AVAILABLE') {
+                        data[grade].availableSeats++;
+                    }
+                });
 
-        return data;
-    }, [seatStatuses]);
+                return data;
+            }, [seatStatuses]);
 
     // 첫 번째 사용 가능한 섹션을 기본 선택
     useEffect(() => {

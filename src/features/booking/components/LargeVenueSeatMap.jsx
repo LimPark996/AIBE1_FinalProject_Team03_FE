@@ -80,11 +80,12 @@ export default function LargeVenueSeatMap({
         const data = {};
 
         seatStatuses.forEach((seat) => {
-            const [section, row, numStr] = seat.seatInfo.split('-');
-            const num = parseInt(numStr, 10);
+            const row = seat.seatRow; // "01"
+            const num = seat.seatNumber; // 1
+            const grade = seat.grade;
 
-            if (!data[section]) {
-                data[section] = {
+            if (!data[grade]) {
+                data[grade] = {
                     rows: {},
                     blocks: {},
                     totalSeats: 0,
@@ -94,21 +95,21 @@ export default function LargeVenueSeatMap({
                 };
             }
 
-            if (!data[section].rows[row]) {
-                data[section].rows[row] = [];
-                data[section].rowList.push(row);
+            if (!data[grade].rows[row]) {
+                data[grade].rows[row] = [];
+                data[grade].rowList.push(row);
             }
 
-            data[section].rows[row].push({ ...seat, num, section, row });
-            data[section].totalSeats++;
+            data[grade].rows[row].push({ ...seat, num, row });
+            data[grade].totalSeats++;
             if (seat.status === 'AVAILABLE') {
-                data[section].availableSeats++;
+                data[grade].availableSeats++;
             }
         });
 
         // 블록 생성 (열을 ROWS_PER_BLOCK개씩 그룹화)
-        Object.keys(data).forEach((section) => {
-            const sortedRows = sortRows(data[section].rowList);
+        Object.keys(data).forEach((grade) => {
+            const sortedRows = sortRows(data[grade].rowList);
             const blocks = {};
 
             sortedRows.forEach((row, index) => {
@@ -126,8 +127,8 @@ export default function LargeVenueSeatMap({
 
                 blocks[blockName].rows.push(row);
                 blocks[blockName].rowRange.end = row;
-                blocks[blockName].totalSeats += data[section].rows[row].length;
-                blocks[blockName].availableSeats += data[section].rows[row]
+                blocks[blockName].totalSeats += data[grade].rows[row].length;
+                blocks[blockName].availableSeats += data[grade].rows[row]
                     .filter((s) => s.status === 'AVAILABLE').length;
             });
 
