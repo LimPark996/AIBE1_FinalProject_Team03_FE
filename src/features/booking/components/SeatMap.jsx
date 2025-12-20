@@ -1,113 +1,129 @@
 // src/features/booking/components/SeatMap.jsx
 
-import React, { useState } from 'react';
+import React from 'react';
+import LargeVenueSeatMap from './LargeVenueSeatMap';
+import MediumVenueSeatMap from './MediumVenueSeatMap';
+import SmallVenueSeatMap from './SmallVenueSeatMap';
 
-// 좌석 상태에 따라 다른 Tailwind CSS 클래스를 반환하는 헬퍼 함수
-const getSeatStatusClass = (status, isSelected) => {
-    if (isSelected) {
-        return 'bg-[#6B8EFE] ring-2 ring-white cursor-pointer'; // 선택됨
-    }
-    switch (status) {
-        case 'AVAILABLE':
-            return 'bg-[#22C55E] hover:bg-green-400 cursor-pointer'; // 선택 가능
-        case 'BOOKED':
-            return 'bg-red-500 cursor-not-allowed'; // 예매 완료
-        default:
-            return 'bg-gray-600 cursor-not-allowed'; // 이용 불가
-    }
-};
-
+/**
+ * 공연장 규모에 따라 적절한 좌석 맵 컴포넌트를 렌더링하는 메인 컴포넌트
+ *
+ * @param {Object} props
+ * @param {Array} props.seatStatuses - 좌석 상태 배열 [{seatId, seatInfo, status, price, grade}, ...]
+ * @param {Array} props.selectedSeats - 선택된 좌석 배열
+ * @param {Function} props.onSeatClick - 좌석 클릭 핸들러
+ * @param {boolean} props.isReserving - 예약 진행 중 여부
+ * @param {Object} props.venueInfo - 공연장 정보 {venueId, venueName, capacity, capacityType}
+ * @param {Object} props.statistics - 좌석 통계 {totalSeats, availableSeats, bookedSeats, ...}
+ */
 export default function SeatMap({
     seatStatuses = [],
     selectedSeats = [],
     onSeatClick,
     isReserving = false,
+    venueInfo = {},
+    statistics = {},
 }) {
-    const [blinkingSeat, setBlinkingSeat] = useState(null);
+    // 공연장 규모 결정 (capacityType 또는 totalSeats 기반)
+    const getVenueSize = () => {
+        // capacityType이 있으면 우선 사용
+        if (venueInfo.capacityType) {
+            return venueInfo.capacityType; // 'LARGE', 'MEDIUM', 'SMALL'
+        }
 
-    const sectionOrder = ['VIP', 'R', 'S', 'A'];
+        // 없으면 좌석 수로 판단
+        const totalSeats = statistics.totalSeats || seatStatuses.length;
 
-    // 1. 좌석 데이터를 '섹션 > 열 > 좌석 배열' 구조로 그룹핑합니다.
-    const sections = seatStatuses.reduce((acc, seat) => {
-        const [section, row, numStr] = seat.seatInfo.split('-');
-        const num = parseInt(numStr, 10);
-        if (!acc[section]) acc[section] = {};
-        if (!acc[section][row]) acc[section][row] = [];
-        acc[section][row].push({ ...seat, num });
-        return acc;
-    }, {});
+        if (totalSeats >= 15000) return 'LARGE';
+        if (totalSeats >= 1500) return 'MEDIUM';
+        return 'SMALL';
+    };
 
-    const selectedSeatIds = new Set(selectedSeats.map((s) => s.seatId));
+    const venueSize = getVenueSize();
 
-    const handleSeatClick = (seat) => {
-        if (onSeatClick) {
-            setBlinkingSeat(seat.seatId);
-            onSeatClick(seat);
+    // 공통 props
+    const commonProps = {
+        seatStatuses,
+        selectedSeats,
+        onSeatClick,
+        isReserving,
+        venueInfo,
+        statistics,
+    };
+
+    // 규모별 컴포넌트 렌더링
+    const renderSeatMap = () => {
+        switch (venueSize) {
+            case 'LARGE':
+                return <LargeVenueSeatMap {...commonProps} />;
+            case 'MEDIUM':
+                return <MediumVenueSeatMap {...commonProps} />;
+            case 'SMALL':
+            default:
+                return <SmallVenueSeatMap {...commonProps} />;
         }
     };
 
-    // isReserving이 false가 되면 깜빡임 중지
-    React.useEffect(() => {
-        if (!isReserving && blinkingSeat) {
-            const timer = setTimeout(() => setBlinkingSeat(null), 300);
-            return () => clearTimeout(timer);
-        }
-    }, [isReserving, blinkingSeat]);
-
     return (
-        <div className="bg-[#22222C] p-4 sm:p-6 rounded-lg h-full">
-            <div className="bg-gray-700 w-3/4 mx-auto h-12 flex items-center justify-center rounded-t-full mb-8 text-white font-bold">
-                STAGE
+        <div className="seat-map-container">
+            {/* 공연장 정보 헤더 */}
+            <div className="bg-[#1a1a24] p-4 rounded-t-lg border-b border-gray-700">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h2 className="text-white font-bold text-lg">
+                            {venueInfo.venueName || '공연장'}
+                        </h2>
+                        <p className="text-gray-400 text-sm">
+                            총 {(statistics.totalSeats || seatStatuses.length).toLocaleString()}석
+                            {statistics.availableSeats !== undefined && (
+                                <span className="ml-2 text-green-400">
+                                    (예매 가능: {statistics.availableSeats.toLocaleString()}석)
+                                </span>
+                            )}
+                        </p>
+                    </div>
+                    <div className="text-right">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            venueSize === 'LARGE' ? 'bg-purple-600 text-white' :
+                            venueSize === 'MEDIUM' ? 'bg-blue-600 text-white' :
+                            'bg-green-600 text-white'
+                        }`}>
+                            {venueSize === 'LARGE' ? '대형 공연장' :
+                             venueSize === 'MEDIUM' ? '중형 공연장' : '소형 공연장'}
+                        </span>
+                    </div>
+                </div>
             </div>
 
-            {/* 2. 섹션별로 반복하여 렌더링 */}
-            <div className="space-y-12">
-                {sectionOrder
-                    .filter((sectionName) => sections[sectionName])  // 존재하는 섹션만
-                    .map((sectionName) => (
-                        <div key={sectionName}>
-                            <h3 className="text-xl font-bold text-center text-white mb-4">
-                                {sectionName} 구역
-                            </h3>
-                            {/* 3. 열(row)별로 반복 */}
-                            <div className="space-y-4">
-                                {Object.keys(sections[sectionName])
-                                    .map((rowName) => (
-                                        <div
-                                            key={rowName}
-                                            className="flex items-center gap-4"
-                                        >
-                                            <span className="w-8 text-gray-400 text-sm">
-                                                {rowName}열
-                                            </span>
-                                            <div className="flex-grow flex justify-center gap-2">
-                                                {/* 4. 개별 좌석 렌더링 */}
-                                                {sections[sectionName][rowName]
-                                                    .sort(
-                                                        (a, b) => a.num - b.num,
-                                                    )
-                                                    .map((seat) => (
-                                                        <div
-                                                            key={seat.seatId}
-                                                            className={`w-8 h-8 flex items-center justify-center text-xs font-bold text-white rounded-md transition-transform active:scale-90
-                                                                ${getSeatStatusClass(seat.status, selectedSeatIds.has(seat.seatId))}
-                                                                ${blinkingSeat === seat.seatId ? 'animate-pulse' : ''}
-                                                            `}
-                                                            onClick={() =>
-                                                                handleSeatClick(
-                                                                    seat,
-                                                                )
-                                                            }
-                                                        >
-                                                            {seat.num}
-                                                        </div>
-                                                    ))}
-                                            </div>
-                                        </div>
-                                    ))}
-                            </div>
-                        </div>
-                    ))}
+            {/* 좌석 맵 */}
+            {renderSeatMap()}
+
+            {/* 범례 */}
+            <SeatLegend />
+        </div>
+    );
+}
+
+/**
+ * 좌석 상태 범례 컴포넌트
+ */
+function SeatLegend() {
+    const legendItems = [
+        { color: 'bg-[#22C55E]', label: '선택 가능' },
+        { color: 'bg-[#6B8EFE]', label: '선택됨' },
+        { color: 'bg-red-500', label: '예매 완료' },
+        { color: 'bg-gray-600', label: '선택 불가' },
+    ];
+
+    return (
+        <div className="bg-[#1a1a24] p-4 rounded-b-lg border-t border-gray-700">
+            <div className="flex flex-wrap justify-center gap-4">
+                {legendItems.map((item) => (
+                    <div key={item.label} className="flex items-center gap-2">
+                        <div className={`w-4 h-4 rounded ${item.color}`} />
+                        <span className="text-gray-300 text-sm">{item.label}</span>
+                    </div>
+                ))}
             </div>
         </div>
     );
