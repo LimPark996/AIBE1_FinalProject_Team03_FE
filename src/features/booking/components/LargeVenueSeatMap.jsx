@@ -132,7 +132,7 @@ export default function LargeVenueSeatMap({
                     .filter((s) => s.status === 'AVAILABLE').length;
             });
 
-            data[section].blocks = blocks;
+            data[grade].blocks = blocks;
         });
 
         return data;
