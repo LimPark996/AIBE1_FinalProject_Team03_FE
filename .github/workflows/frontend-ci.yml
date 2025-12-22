@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4 # GitHub 저장소 코드 체크아웃
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
 
       - name: Set up Node.js 18.x # Node.js 환경 설정 (Vite는 최신 Node.js 버전 권장, 18.x 또는 20.x 선택)
         uses: actions/setup-node@v4
