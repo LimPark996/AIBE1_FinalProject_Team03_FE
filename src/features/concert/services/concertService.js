@@ -307,41 +307,27 @@ export const concertService = {
      */
      async getSeatGrades(concertId) {
          try {
+             console.log('🎫 좌석 등급 정보 조회 시작:', { concertId });
+
              const response = await apiClient.get(`/concerts/${concertId}/seat-layout`);
 
-             // 모든 섹션의 좌석들을 평탄화
-             const allSeats = response.data.sections.flatMap(section => section.seats);
+             // sections → grades로 변경
+             const seatGrades = response.data.grades.map(grade => ({
+                 grade: grade.gradeName,           // "VIP", "R", "S", "A"
+                 gradeName: grade.gradeDescription, // "VIP석", "R석", "S석", "A석"
+                 price: grade.priceRange.minPrice,
+                 availableSeats: grade.availableSeats,
+                 totalSeats: grade.totalSeats
+             }));
 
-             // grade(숫자)별로 그룹핑
-             const gradeGroups = {};
-             allSeats.forEach(seat => {
-                 const gradeValue = seat.grade; // 백엔드에서 오는 grade (enum 또는 숫자)
-                 if (!gradeGroups[gradeValue]) {
-                     gradeGroups[gradeValue] = { seats: [], price: seat.price };
-                 }
-                 gradeGroups[gradeValue].seats.push(seat);
+             console.log('✅ 좌석 등급 정보 조회 성공:', {
+                 concertId,
+                 등급수: seatGrades.length,
+                 등급목록: seatGrades.map(g => g.gradeName)
              });
 
-             // grade enum 매핑 (백엔드 SeatGrade enum 확인 필요)
-             const gradeNames = {
-                 'VIP': 'VIP석', 'R': 'R석', 'S': 'S석', 'A': 'A석',
-                 0: 'VIP석', 1: 'R석', 2: 'S석', 3: 'A석'  // 숫자로 올 경우 대비
-             };
-
-             const seatGrades = Object.entries(gradeGroups)
-                 .map(([grade, data]) => ({
-                     grade: typeof grade === 'string' ? grade : Number(grade),
-                     gradeName: gradeNames[grade] || `${grade}등급`,
-                     price: data.price,
-                     availableSeats: data.seats.filter(s => s.isAvailable).length,
-                     totalSeats: data.seats.length
-                 }))
-                 .sort((a, b) => {
-                     const order = { 'VIP': 0, 'R': 1, 'S': 2, 'A': 3 };
-                     return (order[a.grade] ?? a.grade) - (order[b.grade] ?? b.grade);
-                 });
-
              return seatGrades;
+
          } catch (error) {
              console.error(`❌ 좌석 등급 정보 조회 실패 (ID: ${concertId}):`, error);
 
