@@ -300,55 +300,23 @@ export const concertService = {
     },
 
     /**
-     * 콘서트의 좌석 등급 정보 조회 (기존 seat-layout API 활용)
-     * 백엔드: GET /api/concerts/{concertId}/seat-layout
+     * 콘서트의 좌석 등급 정보 조회
+     * 백엔드: GET /api/concerts/{concertId}/grade-prices
      * @param {number} concertId - 콘서트 ID
-     * @returns {Promise<Array>} 좌석 등급 정보 (grade, gradeName, price, availableSeats, totalSeats)
+     * @returns {Promise<Array>} 좌석 등급 정보 (grade, gradeName, price)
      */
      async getSeatGrades(concertId) {
          try {
-             console.log('🎫 좌석 등급 정보 조회 시작:', { concertId });
+             const response = await apiClient.get(`/concerts/${concertId}/grade-prices`);
 
-             const response = await apiClient.get(`/concerts/${concertId}/seat-layout`);
-
-             // sections → grades로 변경
-             const seatGrades = response.data.grades.map(grade => ({
-                 grade: grade.gradeName,           // "VIP", "R", "S", "A"
-                 gradeName: grade.gradeDescription, // "VIP석", "R석", "S석", "A석"
-                 price: grade.priceRange.minPrice,
-                 availableSeats: grade.availableSeats,
-                 totalSeats: grade.totalSeats
+             return response.data.map(grade => ({
+                 grade: grade.grade,
+                 gradeName: grade.gradeName,
+                 price: grade.price
              }));
-
-             console.log('✅ 좌석 등급 정보 조회 성공:', {
-                 concertId,
-                 등급수: seatGrades.length,
-                 등급목록: seatGrades.map(g => g.gradeName)
-             });
-
-             return seatGrades;
-
          } catch (error) {
-             console.error(`❌ 좌석 등급 정보 조회 실패 (ID: ${concertId}):`, error);
-
-             // 에러 메시지 개선
-             let errorMessage = '좌석 등급 정보를 불러올 수 없습니다.';
-
-             if (error.response) {
-                 const status = error.response.status;
-                 switch (status) {
-                     case 404:
-                         errorMessage = '콘서트를 찾을 수 없습니다.';
-                         break;
-                     case 500:
-                         errorMessage = '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
-                         break;
-                 }
-             } else if (error.code === 'NETWORK_ERROR' || error.code === 'ECONNREFUSED') {
-                 errorMessage = '네트워크 연결을 확인해주세요.';
-             }
-
-             throw new Error(errorMessage);
+             console.error(`❌ 등급별 가격 조회 실패 (ID: ${concertId}):`, error);
+             throw new Error('등급별 가격 정보를 불러올 수 없습니다.');
          }
      },
     /**
