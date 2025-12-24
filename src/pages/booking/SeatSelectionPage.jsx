@@ -50,7 +50,10 @@ export default function SeatSelectionPage() {
                 const grades = await concertService.getSeatGrades(concertId);
                                 setGradeInfo(grades);
 
-                await refreshSeatStatuses(); // 훅 내부의 함수를 호출해 좌석 정보 로드
+                const capacityType = concertData.data.venueCapacityType;
+                            if (capacityType === 'SMALL') {
+                                await refreshSeatStatuses();  // 전체 좌석 로드
+                            }
 
                 // 폴링 시스템 시작 (JWT 토큰 만료 시간 확인을 위해)
                 try {
