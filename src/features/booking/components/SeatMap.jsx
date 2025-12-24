@@ -5,18 +5,10 @@ import LargeVenueSeatMap from './LargeVenueSeatMap';
 import MediumVenueSeatMap from './MediumVenueSeatMap';
 import SmallVenueSeatMap from './SmallVenueSeatMap';
 
-/**
- * 공연장 규모에 따라 적절한 좌석 맵 컴포넌트를 렌더링하는 메인 컴포넌트
- *
- * @param {Object} props
- * @param {Array} props.seatStatuses - 좌석 상태 배열 [{seatId, seatInfo, status, price, grade}, ...]
- * @param {Array} props.selectedSeats - 선택된 좌석 배열
- * @param {Function} props.onSeatClick - 좌석 클릭 핸들러
- * @param {boolean} props.isReserving - 예약 진행 중 여부
- * @param {Object} props.venueInfo - 공연장 정보 {venueId, venueName, capacity, capacityType}
- * @param {Object} props.statistics - 좌석 통계 {totalSeats, availableSeats, bookedSeats, ...}
- */
 export default function SeatMap({
+    concertId,
+    gradeInfo = [],
+    capacityType = 'SMALL',  // ← 직접 받음
     seatStatuses = [],
     selectedSeats = [],
     onSeatClick,
@@ -24,43 +16,39 @@ export default function SeatMap({
     venueInfo = {},
     statistics = {},
 }) {
-    // 공연장 규모 결정 (capacityType 또는 totalSeats 기반)
-    const getVenueSize = () => {
-        // capacityType이 있으면 우선 사용
-        if (venueInfo.capacityType) {
-            return venueInfo.capacityType; // 'LARGE', 'MEDIUM', 'SMALL'
-        }
-
-        // 없으면 좌석 수로 판단
-        const totalSeats = statistics.totalSeats || seatStatuses.length;
-
-        if (totalSeats >= 15000) return 'LARGE';
-        if (totalSeats >= 1500) return 'MEDIUM';
-        return 'SMALL';
-    };
-
-    const venueSize = getVenueSize();
-
-    // 공통 props
-    const commonProps = {
-        seatStatuses,
-        selectedSeats,
-        onSeatClick,
-        isReserving,
-        venueInfo,
-        statistics,
-    };
-
     // 규모별 컴포넌트 렌더링
     const renderSeatMap = () => {
-        switch (venueSize) {
+        switch (capacityType) {
             case 'LARGE':
-                return <LargeVenueSeatMap {...commonProps} />;
+                return (
+                    <LargeVenueSeatMap
+                        concertId={concertId}
+                        gradeInfo={gradeInfo}
+                        selectedSeats={selectedSeats}
+                        onSeatClick={onSeatClick}
+                        isReserving={isReserving}
+                    />
+                );
             case 'MEDIUM':
-                return <MediumVenueSeatMap {...commonProps} />;
+                return (
+                    <MediumVenueSeatMap
+                        concertId={concertId}
+                        gradeInfo={gradeInfo}
+                        selectedSeats={selectedSeats}
+                        onSeatClick={onSeatClick}
+                        isReserving={isReserving}
+                    />
+                );
             case 'SMALL':
             default:
-                return <SmallVenueSeatMap {...commonProps} />;
+                return (
+                    <SmallVenueSeatMap
+                        seatStatuses={seatStatuses}
+                        selectedSeats={selectedSeats}
+                        onSeatClick={onSeatClick}
+                        isReserving={isReserving}
+                    />
+                );
         }
     };
 
@@ -84,12 +72,12 @@ export default function SeatMap({
                     </div>
                     <div className="text-right">
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            venueSize === 'LARGE' ? 'bg-purple-600 text-white' :
-                            venueSize === 'MEDIUM' ? 'bg-blue-600 text-white' :
+                            capacityType === 'LARGE' ? 'bg-purple-600 text-white' :
+                            capacityType === 'MEDIUM' ? 'bg-blue-600 text-white' :
                             'bg-green-600 text-white'
                         }`}>
-                            {venueSize === 'LARGE' ? '대형 공연장' :
-                             venueSize === 'MEDIUM' ? '중형 공연장' : '소형 공연장'}
+                            {capacityType === 'LARGE' ? '대형 공연장' :
+                             capacityType === 'MEDIUM' ? '중형 공연장' : '소형 공연장'}
                         </span>
                     </div>
                 </div>
@@ -104,9 +92,6 @@ export default function SeatMap({
     );
 }
 
-/**
- * 좌석 상태 범례 컴포넌트
- */
 function SeatLegend() {
     const legendItems = [
         { color: 'bg-[#22C55E]', label: '선택 가능' },

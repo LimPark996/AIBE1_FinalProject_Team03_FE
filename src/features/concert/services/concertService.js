@@ -319,6 +319,31 @@ export const concertService = {
              throw new Error('등급별 가격 정보를 불러올 수 없습니다.');
          }
      },
+
+     async getSeatsByGrade(concertId, gradeName) {
+         try {
+             const response = await apiClient.get(
+                 `/concerts/${concertId}/seat-layout/grades/${gradeName}`
+             );
+             return response.data;
+         } catch (error) {
+             console.error(`❌ 등급별 좌석 조회 실패:`, error);
+             throw new Error('좌석 정보를 불러올 수 없습니다.');
+         }
+     },
+
+     async getSeatsByGradeAndSection(concertId, gradeName, sectionName) {
+         try {
+             const response = await apiClient.get(
+                 `/concerts/${concertId}/seat-layout/grades/${gradeName}/sections/${sectionName}`
+             );
+             return response.data;
+         } catch (error) {
+             console.error(`❌ 등급+구역별 좌석 조회 실패:`, error);
+             throw new Error('좌석 정보를 불러올 수 없습니다.');
+         }
+     },
+
     /**
      * 판매자용 AI 요약 수동 재생성
      * 백엔드: POST /api/seller/concerts/{concertId}/ai-summary/regenerate?sellerId={sellerId}

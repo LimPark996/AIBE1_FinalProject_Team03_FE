@@ -1,25 +1,15 @@
-// src/features/booking/components/MediumVenueSeatMap.jsx
-
 import React, { useState, useEffect, useMemo } from 'react';
-
-/**
- * 중형 공연장용 좌석 맵 (1,500~15,000석)
- * 구역 탭으로 선택 후 해당 구역의 좌석을 표시
- */
+import { concertService } from '../../concert/services/concertService';
 
 // 좌석 상태에 따른 스타일 클래스
-const getSeatStatusClass = (status, isSelected) => {
+const getSeatStatusClass = (isAvailable, isSelected) => {
     if (isSelected) {
         return 'bg-[#6B8EFE] ring-2 ring-white cursor-pointer';
     }
-    switch (status) {
-        case 'AVAILABLE':
-            return 'bg-[#22C55E] hover:bg-green-400 cursor-pointer';
-        case 'BOOKED':
-            return 'bg-red-500 cursor-not-allowed';
-        default:
-            return 'bg-gray-600 cursor-not-allowed';
+    if (isAvailable) {
+        return 'bg-[#22C55E] hover:bg-green-400 cursor-pointer';
     }
+    return 'bg-red-500 cursor-not-allowed';
 };
 
 // 등급별 스타일 정보
@@ -55,61 +45,89 @@ const gradeStyles = {
 };
 
 export default function MediumVenueSeatMap({
-    seatStatuses = [],
+    concertId,
     selectedSeats = [],
     onSeatClick,
     isReserving = false,
-    statistics = {},
+    gradeInfo = [],  // 등급별 가격 정보 [{grade, gradeName, price}, ...]
 }) {
-    const [activeSection, setActiveSection] = useState(null);
+    const [activeGrade, setActiveGrade] = useState(null);
+    const [gradeSeats, setGradeSeats] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
     const [blinkingSeat, setBlinkingSeat] = useState(null);
 
-    const sectionOrder = ['VIP', 'R', 'S', 'A'];
+    const gradeOrder = ['VIP', 'R', 'S', 'A'];
 
-    // 좌석 데이터를 섹션별로 그룹핑
+    // 등급 선택 시 해당 등급 좌석 전체 로드
+    useEffect(() => {
+        if (!activeGrade || !concertId) return;
+
+        const loadGradeSeats = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const data = await concertService.getSeatsByGrade(concertId, activeGrade);
+                setGradeSeats(data.seats || []);
+            } catch (err) {
+                console.error('등급별 좌석 로드 실패:', err);
+                setError('좌석 정보를 불러올 수 없습니다.');
+                setGradeSeats([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadGradeSeats();
+    }, [activeGrade, concertId]);
+
+    // 첫 번째 등급 자동 선택
+    useEffect(() => {
+        if (!activeGrade && gradeInfo.length > 0) {
+            const firstGrade = gradeOrder.find(g =>
+                gradeInfo.some(info => info.grade === g)
+            );
+            if (firstGrade) setActiveGrade(firstGrade);
+        }
+    }, [gradeInfo, activeGrade]);
+
+    // 좌석 데이터를 section > row 구조로 그룹핑
     const sectionData = useMemo(() => {
         const data = {};
 
-         seatStatuses.forEach((seat) => {
-                const grade = seat.grade;  // "VIP", "R", "S", "A"
-                const row = seat.seatRow;
-                const num = seat.seatNumber;
+        gradeSeats.forEach((seat) => {
+            const section = seat.section;
+            const row = seat.seatRow;
 
-            if (!data[grade]) {
-                        data[grade] = {
-                            rows: {},
-                            totalSeats: 0,
-                            availableSeats: 0,
-                            price: seat.price,
-                        };
-                    }
+            if (!data[section]) {
+                data[section] = {
+                    rows: {},
+                    totalSeats: 0,
+                    availableSeats: 0,
+                };
+            }
 
-                    if (!data[grade].rows[row]) {
-                        data[grade].rows[row] = [];
-                    }
+            if (!data[section].rows[row]) {
+                data[section].rows[row] = [];
+            }
 
-                    data[grade].rows[row].push({ ...seat, num, row });
-                    data[grade].totalSeats++;
-                    if (seat.status === 'AVAILABLE') {
-                        data[grade].availableSeats++;
-                    }
-                });
+            data[section].rows[row].push(seat);
+            data[section].totalSeats++;
+            if (seat.isAvailable) {
+                data[section].availableSeats++;
+            }
+        });
 
-                return data;
-            }, [seatStatuses]);
+        return data;
+    }, [gradeSeats]);
 
-    // 첫 번째 사용 가능한 섹션을 기본 선택
-    useEffect(() => {
-        if (!activeSection) {
-            const firstSection = sectionOrder.find((s) => sectionData[s]);
-            if (firstSection) setActiveSection(firstSection);
-        }
-    }, [sectionData, activeSection]);
+    // section 정렬
+    const sortedSections = Object.keys(sectionData).sort();
 
     const selectedSeatIds = new Set(selectedSeats.map((s) => s.seatId));
 
     const handleSeatClick = (seat) => {
-        if (seat.status !== 'AVAILABLE' && !selectedSeatIds.has(seat.seatId)) return;
+        if (!seat.isAvailable && !selectedSeatIds.has(seat.seatId)) return;
         if (onSeatClick) {
             setBlinkingSeat(seat.seatId);
             onSeatClick(seat);
@@ -133,7 +151,8 @@ export default function MediumVenueSeatMap({
         });
     };
 
-    const currentSectionData = activeSection ? sectionData[activeSection] : null;
+    const currentGradeInfo = gradeInfo.find(g => g.grade === activeGrade);
+    const currentStyle = gradeStyles[activeGrade] || gradeStyles.A;
 
     return (
         <div className="bg-[#22222C] p-4 sm:p-6 rounded-lg">
@@ -142,27 +161,19 @@ export default function MediumVenueSeatMap({
                 <span className="text-white font-bold tracking-widest">STAGE</span>
             </div>
 
-            {/* 구역 미니맵 */}
-            <SectionMinimap
-                sectionData={sectionData}
-                activeSection={activeSection}
-                onSectionClick={setActiveSection}
-                sectionOrder={sectionOrder}
-            />
-
-            {/* 구역 탭 */}
+            {/* 등급 탭 */}
             <div className="flex justify-center gap-2 mb-6 flex-wrap">
-                {sectionOrder
-                    .filter((section) => sectionData[section])
-                    .map((section) => {
-                        const style = gradeStyles[section];
-                        const isActive = activeSection === section;
-                        const data = sectionData[section];
+                {gradeOrder
+                    .filter(grade => gradeInfo.some(g => g.grade === grade))
+                    .map((grade) => {
+                        const info = gradeInfo.find(g => g.grade === grade);
+                        const style = gradeStyles[grade];
+                        const isActive = activeGrade === grade;
 
                         return (
                             <button
-                                key={section}
-                                onClick={() => setActiveSection(section)}
+                                key={grade}
+                                onClick={() => setActiveGrade(grade)}
                                 className={`
                                     px-4 py-2 rounded-lg font-medium transition-all
                                     border ${style.border}
@@ -174,69 +185,101 @@ export default function MediumVenueSeatMap({
                             >
                                 <div className="text-sm font-bold">{style.label}</div>
                                 <div className="text-xs opacity-80">
-                                    {data.availableSeats}/{data.totalSeats}석
+                                    {info?.price?.toLocaleString()}원
                                 </div>
                             </button>
                         );
                     })}
             </div>
 
-            {/* 선택된 구역의 좌석 표시 */}
-            {currentSectionData && (
-                <div className="bg-[#1a1a24] rounded-lg p-4">
-                    {/* 구역 정보 헤더 */}
-                    <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-700">
+            {/* 로딩/에러/좌석 표시 */}
+            {loading ? (
+                <div className="text-center py-10 text-gray-400">
+                    <div className="inline-block w-6 h-6 border-2 border-gray-400 border-t-blue-500 rounded-full animate-spin mb-2" />
+                    <div>좌석 정보를 불러오는 중...</div>
+                </div>
+            ) : error ? (
+                <div className="text-center py-10 text-red-400">{error}</div>
+            ) : gradeSeats.length > 0 ? (
+                <div className="space-y-6">
+                    {/* 등급 정보 헤더 */}
+                    <div className="flex justify-between items-center pb-3 border-b border-gray-700">
                         <div>
-                            <span className={`font-bold text-lg ${gradeStyles[activeSection]?.color}`}>
-                                {gradeStyles[activeSection]?.label}
+                            <span className={`font-bold text-lg ${currentStyle.color}`}>
+                                {currentStyle.label}
                             </span>
                             <span className="text-gray-400 text-sm ml-2">
-                                ({currentSectionData.availableSeats}석 예매 가능)
+                                (총 {gradeSeats.length}석 / 예매가능 {gradeSeats.filter(s => s.isAvailable).length}석)
                             </span>
                         </div>
                         <div className="text-white font-bold">
-                            {currentSectionData.price?.toLocaleString()}원
+                            {currentGradeInfo?.price?.toLocaleString()}원
                         </div>
                     </div>
 
-                    {/* 좌석 그리드 */}
-                    <div className="space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar">
-                        {sortRows(currentSectionData.rows).map((rowName) => (
-                            <div key={rowName} className="flex items-center gap-2">
-                                <span className="w-10 text-gray-400 text-xs text-right flex-shrink-0">
-                                    {rowName}열
-                                </span>
-
-                                <div className="flex-grow flex justify-center gap-1 flex-wrap">
-                                    {currentSectionData.rows[rowName]
-                                        .sort((a, b) => a.num - b.num)
-                                        .map((seat) => (
-                                            <button
-                                                key={seat.seatId}
-                                                disabled={seat.status === 'BOOKED' || seat.status === 'UNAVAILABLE'}
-                                                className={`
-                                                    w-6 h-6 sm:w-7 sm:h-7
-                                                    flex items-center justify-center
-                                                    text-[9px] sm:text-[10px] font-bold text-white
-                                                    rounded transition-all duration-150
-                                                    ${getSeatStatusClass(seat.status, selectedSeatIds.has(seat.seatId))}
-                                                    ${blinkingSeat === seat.seatId ? 'animate-pulse scale-110' : ''}
-                                                    ${seat.status === 'AVAILABLE' ? 'hover:scale-110 active:scale-95' : ''}
-                                                `}
-                                                onClick={() => handleSeatClick(seat)}
-                                                title={`${seat.seatInfo} - ${seat.price?.toLocaleString()}원`}
-                                            >
-                                                {seat.num}
-                                            </button>
-                                        ))}
+                    {/* Section별 좌석 표시 */}
+                    <div className="space-y-8 max-h-[500px] overflow-y-auto custom-scrollbar">
+                        {sortedSections.map((sectionName) => (
+                            <div key={sectionName} className="bg-[#1a1a24] rounded-lg p-4">
+                                {/* Section 헤더 */}
+                                <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-700">
+                                    <span className="text-white font-semibold">
+                                        {sectionName}구역
+                                    </span>
+                                    <span className="text-gray-400 text-sm">
+                                        {sectionData[sectionName].availableSeats}/{sectionData[sectionName].totalSeats}석
+                                    </span>
                                 </div>
 
-                                <span className="w-10 text-gray-400 text-xs text-left flex-shrink-0">
-                                    {rowName}열
-                                </span>
+                                {/* 열별 좌석 */}
+                                <div className="space-y-2">
+                                    {sortRows(sectionData[sectionName].rows).map((rowName) => (
+                                        <div key={rowName} className="flex items-center gap-2">
+                                            <span className="w-10 text-gray-400 text-xs text-right flex-shrink-0">
+                                                {rowName}열
+                                            </span>
+
+                                            <div className="flex-grow flex justify-center gap-1 flex-wrap">
+                                                {sectionData[sectionName].rows[rowName]
+                                                    .sort((a, b) => a.seatNumber - b.seatNumber)
+                                                    .map((seat) => (
+                                                        <button
+                                                            key={seat.seatId}
+                                                            disabled={!seat.isAvailable && !selectedSeatIds.has(seat.seatId)}
+                                                            className={`
+                                                                w-6 h-6 sm:w-7 sm:h-7
+                                                                flex items-center justify-center
+                                                                text-[9px] sm:text-[10px] font-bold text-white
+                                                                rounded transition-all duration-150
+                                                                ${getSeatStatusClass(seat.isAvailable, selectedSeatIds.has(seat.seatId))}
+                                                                ${blinkingSeat === seat.seatId ? 'animate-pulse scale-110' : ''}
+                                                                ${seat.isAvailable ? 'hover:scale-110 active:scale-95' : ''}
+                                                            `}
+                                                            onClick={() => handleSeatClick(seat)}
+                                                            title={`${seat.seatLabel} - ${currentGradeInfo?.price?.toLocaleString()}원`}
+                                                        >
+                                                            {seat.seatNumber}
+                                                        </button>
+                                                    ))}
+                                            </div>
+
+                                            <span className="w-10 text-gray-400 text-xs text-left flex-shrink-0">
+                                                {rowName}열
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         ))}
                     </div>
+                </div>
+            ) : activeGrade ? (
+                <div className="text-center py-10 text-gray-400">
+                    해당 등급에 좌석이 없습니다.
+                </div>
+            ) : (
+                <div className="text-center py-10 text-gray-400">
+                    등급을 선택해주세요
                 </div>
             )}
 
@@ -257,63 +300,6 @@ export default function MediumVenueSeatMap({
                     background: #5a5a6a;
                 }
             `}</style>
-        </div>
-    );
-}
-
-/**
- * 구역 미니맵 컴포넌트
- */
-function SectionMinimap({ sectionData, activeSection, onSectionClick, sectionOrder }) {
-    return (
-        <div className="mb-6">
-            <div className="flex justify-center">
-                <div className="relative w-64 h-40">
-                    {/* 스테이지 표시 */}
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-4 bg-gray-600 rounded-t-full" />
-
-                    {/* 구역 블록들 */}
-                    <div className="absolute top-8 left-0 right-0 flex flex-col items-center gap-1">
-                        {sectionOrder
-                            .filter((section) => sectionData[section])
-                            .map((section, index) => {
-                                const style = gradeStyles[section];
-                                const isActive = activeSection === section;
-                                const data = sectionData[section];
-                                const availabilityRate = data.totalSeats > 0
-                                    ? (data.availableSeats / data.totalSeats) * 100
-                                    : 0;
-
-                                // 구역 크기 계산 (아래로 갈수록 커짐)
-                                const width = 80 + index * 30;
-
-                                return (
-                                    <button
-                                        key={section}
-                                        onClick={() => onSectionClick(section)}
-                                        className={`
-                                            h-6 rounded transition-all cursor-pointer
-                                            border-2 ${style.border}
-                                            ${isActive
-                                                ? `${style.activeBg} opacity-100`
-                                                : `${style.bg} opacity-60 hover:opacity-80`
-                                            }
-                                        `}
-                                        style={{ width: `${width}px` }}
-                                        title={`${style.label}: ${data.availableSeats}/${data.totalSeats}석 (${availabilityRate.toFixed(0)}% 가능)`}
-                                    >
-                                        <span className="text-[10px] text-white font-bold">
-                                            {section}
-                                        </span>
-                                    </button>
-                                );
-                            })}
-                    </div>
-                </div>
-            </div>
-            <p className="text-center text-gray-500 text-xs mt-2">
-                구역을 클릭하여 좌석을 선택하세요
-            </p>
         </div>
     );
 }

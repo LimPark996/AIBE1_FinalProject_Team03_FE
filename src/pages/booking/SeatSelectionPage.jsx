@@ -14,6 +14,7 @@ import { useToast } from '../../shared/hooks/useToast.jsx';
 export default function SeatSelectionPage() {
     const { concertId } = useParams();
     const [concertInfo, setConcertInfo] = useState(null);
+    const [gradeInfo, setGradeInfo] = useState([]);
     const [pageLoading, setPageLoading] = useState(true);
     const [pageError, setPageError] = useState(null);
     const { proceedToPayment, isProcessing, paymentError } = usePayment();
@@ -45,6 +46,10 @@ export default function SeatSelectionPage() {
                 const concertData =
                     await concertService.getConcertById(concertId);
                 setConcertInfo(concertData.data);
+
+                const grades = await concertService.getSeatGrades(concertId);
+                                setGradeInfo(grades);
+
                 await refreshSeatStatuses(); // 훅 내부의 함수를 호출해 좌석 정보 로드
 
                 // 폴링 시스템 시작 (JWT 토큰 만료 시간 확인을 위해)
@@ -148,6 +153,9 @@ export default function SeatSelectionPage() {
                 <div className="mt-8 flex flex-col lg:flex-row gap-8">
                     <div className="flex-grow lg:w-2/3">
                         <SeatMap
+                            concertId={concertId}
+                            gradeInfo={gradeInfo}
+                            capacityType={concertInfo?.venueCapacityType}
                             seatStatuses={seatStatuses}
                             selectedSeats={selectedSeats}
                             onSeatClick={handleSeatClick}
