@@ -50,6 +50,7 @@ export default function MediumVenueSeatMap({
     onSeatClick,
     isReserving = false,
     gradeInfo = [],  // 등급별 가격 정보 [{grade, gradeName, price}, ...]
+    refreshTrigger,
 }) {
     const [activeGrade, setActiveGrade] = useState(null);
     const [gradeSeats, setGradeSeats] = useState([]);
@@ -79,7 +80,7 @@ export default function MediumVenueSeatMap({
         };
 
         loadGradeSeats();
-    }, [activeGrade, concertId]);
+    }, [activeGrade, concertId, refreshTrigger]);
 
     // 첫 번째 등급 자동 선택
     useEffect(() => {
