@@ -448,4 +448,20 @@ export const concertService = {
             throw new Error(errorMessage);
         }
     },
+
+    /**
+     * 특정 등급의 구역별 좌석 카운트 조회
+     * 백엔드: GET /api/concerts/{concertId}/grades/{gradeName}/section-counts
+     */
+    async getSectionCounts(concertId, gradeName) {
+        try {
+            const response = await apiClient.get(
+                `/concerts/${concertId}/grades/${gradeName}/section-counts`
+            );
+            return response.data;
+        } catch (error) {
+            console.error(`❌ 구역별 카운트 조회 실패:`, error);
+            throw new Error('구역 정보를 불러올 수 없습니다.');
+        }
+    },
 };

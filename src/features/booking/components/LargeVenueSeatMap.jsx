@@ -77,29 +77,7 @@ export default function LargeVenueSeatMap({
             setSectionSeats([]);
 
             try {
-                // 등급별 좌석 조회 → 구역 목록 추출
-                const data = await concertService.getSeatsByGrade(concertId, activeGrade);
-                const seats = data.seats || [];
-
-                // 구역별로 그룹핑해서 구역 목록 생성
-                const sectionMap = {};
-                seats.forEach(seat => {
-                    if (!sectionMap[seat.section]) {
-                        sectionMap[seat.section] = {
-                            name: seat.section,
-                            totalSeats: 0,
-                            availableSeats: 0,
-                        };
-                    }
-                    sectionMap[seat.section].totalSeats++;
-                    if (seat.isAvailable) {
-                        sectionMap[seat.section].availableSeats++;
-                    }
-                });
-
-                const sections = Object.values(sectionMap).sort((a, b) =>
-                    a.name.localeCompare(b.name)
-                );
+                const sections = await concertService.getSectionCounts(concertId, activeGrade);
                 setGradeSections(sections);
 
             } catch (err) {
@@ -303,7 +281,7 @@ export default function LargeVenueSeatMap({
                                     `}
                                 >
                                     <span className={`font-bold ${currentStyle.color}`}>
-                                        {section.name}구역
+                                        {section.section}구역
                                     </span>
                                     <span className="text-white text-sm mt-1">
                                         {section.availableSeats}/{section.totalSeats}석
