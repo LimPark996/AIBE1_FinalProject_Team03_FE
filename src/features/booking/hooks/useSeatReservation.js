@@ -123,7 +123,7 @@ export const useSeatReservation = (concertId, options = {}) => {
                 const stableManager = createStablePollingManager(concertId, {
                     onUpdate: () => {
                         console.log(
-                            '🔥 폴링 업데이트 트리거 (capacityType: ${capacityType})`);
+                            `🔥 폴링 업데이트 트리거 (capacityType: ${capacityType})`);
 
                         // capacityType에 따라 분기
                         if (capacityType === 'SMALL' || !capacityType) {
