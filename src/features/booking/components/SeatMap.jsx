@@ -15,6 +15,7 @@ export default function SeatMap({
     isReserving = false,
     venueInfo = {},
     statistics = {},
+    refreshTrigger,
 }) {
     // 규모별 컴포넌트 렌더링
     const renderSeatMap = () => {
@@ -27,6 +28,8 @@ export default function SeatMap({
                         selectedSeats={selectedSeats}
                         onSeatClick={onSeatClick}
                         isReserving={isReserving}
+
+refreshTrigger={refreshTrigger}
                     />
                 );
             case 'MEDIUM':
@@ -37,6 +40,8 @@ export default function SeatMap({
                         selectedSeats={selectedSeats}
                         onSeatClick={onSeatClick}
                         isReserving={isReserving}
+
+refreshTrigger={refreshTrigger}
                     />
                 );
             case 'SMALL':

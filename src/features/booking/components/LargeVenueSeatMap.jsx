@@ -52,6 +52,7 @@ export default function LargeVenueSeatMap({
     selectedSeats = [],
     onSeatClick,
     isReserving = false,
+    refreshTrigger,
 }) {
     // 3단계 선택 상태
     const [activeGrade, setActiveGrade] = useState(null);
@@ -117,7 +118,7 @@ export default function LargeVenueSeatMap({
         };
 
         loadSectionSeats();
-    }, [activeGrade, activeSection, concertId]);
+    }, [activeGrade, activeSection, concertId,refreshTrigger]);
 
     // 첫 번째 등급 자동 선택
     useEffect(() => {

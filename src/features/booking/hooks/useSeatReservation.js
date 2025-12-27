@@ -52,6 +52,10 @@ export const useSeatReservation = (concertId, options = {}) => {
         }
     }, [concertId]);
 
+useEffect(() => {
+    refreshSeatStatuses();
+}, [concertId]);
+
     // 좌석 상태 부분 업데이트 함수 (실시간 폴링용)
     const updateSeatStatuses = useCallback((seatUpdates) => {
         console.log('🔥 좌석 상태 부분 업데이트:', seatUpdates);
