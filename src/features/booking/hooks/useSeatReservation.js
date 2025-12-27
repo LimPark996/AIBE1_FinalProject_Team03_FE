@@ -278,18 +278,6 @@ export const useSeatReservation = (concertId, options = {}) => {
     }, [selectedSeats]);
 
     useEffect(() => {
-        if (timer <= 0) {
-            if (selectedSeatsRef.current.length > 0) {
-                alert('선점 시간이 만료되었습니다.');
-                handleClearSelection().catch(console.error);
-            }
-            return;
-        }
-        const interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
-        return () => clearInterval(interval);
-    }, [timer]);
-
-    useEffect(() => {
         // 1분에 한 번씩 액세스키 연장 API를 호출하는 인터벌 설정
         const EXTENSION_INTERVAL_MS = 60 * 1000; // 1분
 
@@ -383,8 +371,6 @@ export const useSeatReservation = (concertId, options = {}) => {
                 ),
             );
             await refreshSeatStatuses();
-
-            // 전체 해제 액션 후 즉시 폴링 트리거
             triggerImmediatePolling();
         } catch (err) {
             setError(err.message);
@@ -397,6 +383,18 @@ export const useSeatReservation = (concertId, options = {}) => {
         refreshSeatStatuses,
         triggerImmediatePolling,
     ]);
+
+    useEffect(() => {
+        if (timer <= 0) {
+            if (selectedSeatsRef.current.length > 0) {
+                alert('선점 시간이 만료되었습니다.');
+                handleClearSelection().catch(console.error);
+            }
+            return;
+        }
+        const interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
+        return () => clearInterval(interval);
+    }, [timer, handleClearSelection]);
 
     const clearError = useCallback(() => {
         setError(null);
