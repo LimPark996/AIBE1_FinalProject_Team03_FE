@@ -15,7 +15,7 @@ import {
 } from '../services/seatService';
 
 export const useSeatReservation = (concertId, options = {}) => {
-    const { enablePolling = true } = options;
+    const { enablePolling = true, capacityType = null } = options
     // 1. 모든 관련 상태는 훅 내에서만 관리합니다.
     const [seatStatuses, setSeatStatuses] = useState([]);
     const [selectedSeats, setSelectedSeats] = useState([]);
@@ -24,6 +24,7 @@ export const useSeatReservation = (concertId, options = {}) => {
     const [timer, setTimer] = useState(0);
     const [isPolling, setIsPolling] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState('disconnected'); // 'disconnected', 'connecting', 'connected', 'error'
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     const selectedSeatsRef = useRef(selectedSeats);
     const pollingManagerRef = useRef(null);
@@ -51,10 +52,6 @@ export const useSeatReservation = (concertId, options = {}) => {
             );
         }
     }, [concertId]);
-
-useEffect(() => {
-    refreshSeatStatuses();
-}, [concertId]);
 
     // 좌석 상태 부분 업데이트 함수 (실시간 폴링용)
     const updateSeatStatuses = useCallback((seatUpdates) => {
@@ -126,10 +123,17 @@ useEffect(() => {
                 const stableManager = createStablePollingManager(concertId, {
                     onUpdate: () => {
                         console.log(
-                            '🔥 폴링 업데이트 트리거 - 전체 좌석 상태 새로고침',
-                        );
-                        // 항상 전체 새로고침으로 누락 방지
-                        refreshSeatStatuses();
+                            '🔥 폴링 업데이트 트리거 (capacityType: ${capacityType})`);
+
+                        // capacityType에 따라 분기
+                        if (capacityType === 'SMALL' || !capacityType) {
+                            // SMALL 또는 미지정: 전체 좌석 상태 새로고침
+                            refreshSeatStatuses();
+                        }
+
+                        // MEDIUM/LARGE: refreshTrigger 증가 (항상 실행)
+                        // SMALL에서도 실행해도 무해함 (SmallVenueSeatMap은 refreshTrigger 안 씀)
+                        setRefreshTrigger(prev => prev + 1);
                     },
                     onError: (error) => {
                         console.error('🔥 폴링 에러:', error);
@@ -216,7 +220,8 @@ useEffect(() => {
         isPolling,
         enablePolling,
         refreshSeatStatuses,
-        updateSeatStatuses,
+        capacityType,
+        executePollingCycle,
     ]);
 
     // 폴링 사이클 실행 함수 (폴백용 - 일반 새로고침 모드)
@@ -224,9 +229,14 @@ useEffect(() => {
         try {
             console.log('🔥 좌석 상태 새로고침 사이클 시작');
 
-            // refreshSeatStatuses 호출 (실시간 좌석 상태 동기화)
-            console.log('🔥 refreshSeatStatuses 호출');
-            await refreshSeatStatuses();
+            // capacityType에 따라 분기 (메인 로직과 동일하게)
+            if (capacityType === 'SMALL' || !capacityType) {
+                console.log('🔥 refreshSeatStatuses 호출');
+                await refreshSeatStatuses();
+            }
+
+            // MEDIUM/LARGE: refreshTrigger 증가
+            setRefreshTrigger(prev => prev + 1)
 
             setError(null);
             setConnectionStatus('connected');
@@ -235,7 +245,7 @@ useEffect(() => {
             setError(error.message);
             setConnectionStatus('error');
         }
-    }, [concertId, refreshSeatStatuses]);
+    }, [concertId, refreshSeatStatuses, capacityType]);
 
     // 폴링 시스템 정지 함수
     const stopPolling = useCallback(() => {
@@ -450,5 +460,6 @@ useEffect(() => {
         handleClearSelection,
         handleRestoreComplete, // 좌석 복구 후 상태 초기화 함수
         clearError, // 에러 상태 초기화 함수
+        refreshTrigger,
     };
 };

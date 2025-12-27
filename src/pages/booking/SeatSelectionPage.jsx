@@ -35,7 +35,11 @@ export default function SeatSelectionPage() {
         handleRemoveSeat,
         handleClearSelection,
         clearError,
-    } = useSeatReservation(concertId, { enablePolling: true }); // 폴링 활성화 (JWT 토큰 실제 만료 시간 확인을 위해)
+        refreshTrigger,
+    } = useSeatReservation(concertId, {
+        enablePolling: true,
+        capacityType: concertInfo?.venueCapacityType
+    });
 
     // 2. 페이지 최초 로드 시, 콘서트 정보와 좌석 정보를 모두 로드합니다.
     useEffect(() => {
@@ -163,6 +167,7 @@ export default function SeatSelectionPage() {
                             selectedSeats={selectedSeats}
                             onSeatClick={handleSeatClick}
                             isReserving={isReserving}
+                            refreshTrigger={refreshTrigger}
                         />
                     </div>
                     <div className="lg:w-1/3 lg:max-w-sm">
