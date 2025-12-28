@@ -125,7 +125,7 @@ export default function LargeVenueSeatMap({
         };
 
         loadSectionSeats();
-    }, [activeGrade, activeSection, concertId,refreshTrigger]);
+    }, [activeSection, concertId, refreshTrigger]);
 
     // 첫 번째 등급 자동 선택
     useEffect(() => {
