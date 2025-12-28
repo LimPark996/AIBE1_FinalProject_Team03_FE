@@ -67,6 +67,13 @@ export default function LargeVenueSeatMap({
 
     const gradeOrder = ['VIP', 'R', 'S', 'A'];
 
+    useEffect(() => {
+            setActiveSection(null);
+            setSectionSeats([]);
+            setGradeSections([]);
+            setError(null);
+        }, [activeGrade]);
+
     // 1단계: 등급 선택 시 → 해당 등급의 구역 목록 로드
     useEffect(() => {
         if (!activeGrade || !concertId) return;
