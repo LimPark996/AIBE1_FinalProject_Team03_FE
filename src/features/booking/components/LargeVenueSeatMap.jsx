@@ -273,8 +273,8 @@ export default function LargeVenueSeatMap({
 
                             return (
                                 <button
-                                    key={section.name}
-                                    onClick={() => setActiveSection(section.name)}
+                                    key={section.section}
+                                    onClick={() => setActiveSection(section.section)}
                                     className={`
                                         p-3 rounded-lg border ${currentStyle.border} ${currentStyle.bg}
                                         hover:opacity-80 transition-all
