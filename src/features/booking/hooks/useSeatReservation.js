@@ -82,22 +82,14 @@ export const useSeatReservation = (concertId, options = {}) => {
         });
     }, []);
 
-    const triggerImmediatePolling = useCallback(() => {
-        console.log('🚀 사용자 액션 발생 (폴링은 35초 주기로 계속 실행)');
-    }, []);
-
-    // ⭐ executePollingCycle을 startPolling보다 먼저 정의
+    // executePollingCycle을 startPolling보다 먼저 정의
     const executePollingCycle = useCallback(async () => {
         try {
-            console.log(`🔥 좌석 상태 새로고침 사이클 시작 (capacityType: ${capacityType})`);
-
-            if (capacityType === 'SMALL' || !capacityType) {
-                console.log('🔥 refreshSeatStatuses 호출');
-                await refreshSeatStatuses();
-            }
+            // SMALL만 폴링하므로 조건 분기 불필요
+            console.log('🔥 SMALL 좌석 상태 새로고침');
+            await refreshSeatStatuses();
 
             setRefreshTrigger(prev => prev + 1);
-
             setError(null);
             setConnectionStatus('connected');
         } catch (error) {
@@ -105,7 +97,7 @@ export const useSeatReservation = (concertId, options = {}) => {
             setError(error.message);
             setConnectionStatus('error');
         }
-    }, [capacityType, refreshSeatStatuses]);
+    }, [refreshSeatStatuses]);
 
     const stopPolling = useCallback(() => {
         console.log('🔥 폴링 시스템 중지');
@@ -122,8 +114,14 @@ export const useSeatReservation = (concertId, options = {}) => {
         pollingManagerRef.current = null;
     }, []);
 
-    // ⭐ startPolling은 executePollingCycle 다음에 정의
+    // startPolling은 executePollingCycle 다음에 정의
     const startPolling = useCallback(async () => {
+        // SMALL이 아니면 폴링 시작 안 함
+        if (capacityType !== 'SMALL') {
+            console.log('🔥 MEDIUM/LARGE는 폴링 비활성화');
+            return;
+        }
+
         if (isStartingPollingRef.current || isPolling || !enablePolling) {
             return;
         }
@@ -149,12 +147,8 @@ export const useSeatReservation = (concertId, options = {}) => {
                     onUpdate: () => {
                         console.log(
                             `🔥 폴링 업데이트 트리거 (capacityType: ${capacityType})`);
-
-                        if (capacityType === 'SMALL' || !capacityType) {
                             refreshSeatStatuses();
-                        }
-
-                        setRefreshTrigger(prev => prev + 1);
+                            setRefreshTrigger(prev => prev + 1);
                     },
                     onError: (error) => {
                         console.error('🔥 폴링 에러:', error);
@@ -277,7 +271,6 @@ export const useSeatReservation = (concertId, options = {}) => {
                     await reserveSeat(concertId, seat.seatId);
                 }
                 await refreshSeatStatuses();
-                triggerImmediatePolling();
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -288,7 +281,6 @@ export const useSeatReservation = (concertId, options = {}) => {
             concertId,
             selectedSeats,
             refreshSeatStatuses,
-            triggerImmediatePolling,
         ],
     );
 
@@ -301,7 +293,6 @@ export const useSeatReservation = (concertId, options = {}) => {
                 ),
             );
             await refreshSeatStatuses();
-            triggerImmediatePolling();
         } catch (err) {
             setError(err.message);
         } finally {
@@ -311,7 +302,6 @@ export const useSeatReservation = (concertId, options = {}) => {
         concertId,
         selectedSeats,
         refreshSeatStatuses,
-        triggerImmediatePolling,
     ]);
 
     const handleRemoveSeat = useCallback(
@@ -418,7 +408,6 @@ export const useSeatReservation = (concertId, options = {}) => {
         refreshSeatStatuses,
         startPolling,
         stopPolling,
-        triggerImmediatePolling,
         handleSeatClick,
         handleRemoveSeat,
         handleClearSelection,
