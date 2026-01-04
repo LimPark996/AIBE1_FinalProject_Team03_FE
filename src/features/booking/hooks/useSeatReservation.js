@@ -33,9 +33,28 @@ export const useSeatReservation = (concertId, options = {}) => {
     const stablePollingManagerRef = useRef(null);
     const isStartingPollingRef = useRef(false);
 
-    const MAX_SEATS_SELECTABLE = 2;
+    const MAX_SEATS_SELECTABLE = 4;
 
     // ===== 3단계: 기본 함수들 (의존성 순서대로) =====
+
+    const abortControllerRef = useRef(null);
+
+    // concertId 변경 시 상태 초기화
+    useEffect(() => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        abortControllerRef.current = new AbortController();
+
+        // 상태 초기화
+        setSeatStatuses([]);
+        setSelectedSeats([]);
+        setError(null);
+        setTimer(0);
+        setRefreshTrigger(0);
+
+        console.log(`🔥 concertId 변경됨: ${concertId} - 상태 초기화 완료`);
+    }, [concertId]);
 
     const refreshSeatStatuses = useCallback(async () => {
         try {
@@ -250,38 +269,83 @@ export const useSeatReservation = (concertId, options = {}) => {
 
     const handleSeatClick = useCallback(
         async (seat) => {
+            const isSelected = selectedSeats.some((s) => s.seatId === seat.seatId);
+
+            if (!isSelected && selectedSeats.length >= 4) {
+                setError('좌석은 최대 4개까지 선점할 수 있습니다.');
+                return;
+            }
+
             setIsReserving(true);
             setError(null);
-            try {
-                const isSelected = selectedSeats.some(
-                    (s) => s.seatId === seat.seatId,
-                );
-                if (isSelected) {
+
+            if (isSelected) {
+                // 선점 해제: Optimistic UI
+                setSelectedSeats(prev => prev.filter(s => s.seatId !== seat.seatId));
+                try {
                     await releaseSeat(concertId, seat.seatId);
-                } else {
-                    if (selectedSeats.length >= MAX_SEATS_SELECTABLE) {
-                        throw new Error(
-                            '좌석은 최대 2개까지 선점할 수 있습니다.',
-                        );
+                    if (capacityType === 'SMALL') {
+                        await refreshSeatStatuses();
                     }
-                    const isAvailable = seat.status === 'AVAILABLE' || seat.isAvailable === true;
-                    if (!isAvailable) {
-                        throw new Error('다른 유저가 선점 중인 좌석입니다. 다른 좌석을 선택해 주세요.');
-                    }
-                    await reserveSeat(concertId, seat.seatId);
+                } catch (err) {
+                    // 실패 시 롤백 (다시 추가)
+                    setSelectedSeats(prev => [...prev, seat]);
+                    setError(err.message);
+                } finally {
+                    setIsReserving(false);
                 }
-                await refreshSeatStatuses();
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setIsReserving(false);
+            } else {
+                // 선점: Optimistic UI
+                const isAvailable = seat.status === 'AVAILABLE' || seat.isAvailable === true;
+                if (!isAvailable) {
+                    setError('다른 유저가 선점 중인 좌석입니다. 다른 좌석을 선택해 주세요.');
+                    setIsReserving(false);
+                    return;
+                }
+
+                // 즉시 UI 변경 (파란색으로!)
+                setSelectedSeats(prev => [...prev, {
+                    ...seat,
+                    isReservedByCurrentUser: true,
+                    remainingSeconds: 300,
+                }]);
+
+                try {
+                    const result = await reserveSeat(concertId, seat.seatId);
+
+                    if (capacityType === 'SMALL') {
+                        await refreshSeatStatuses();
+                    } else {
+                        // MEDIUM/LARGE: 서버 데이터로 업데이트 (추가가 아니라 교체!)
+                        const seatData = result.data || result;
+                        setSelectedSeats(prev => prev.map(s =>
+                            s.seatId === seat.seatId
+                                ? {
+                                    seatId: seatData.seatId,
+                                    seatInfo: seatData.seatInfo,
+                                    seatLabel: seatData.seatInfo,
+                                    grade: seatData.grade,
+                                    price: seatData.price,
+                                    seatRow: seatData.seatRow,
+                                    seatNumber: seatData.seatNumber,
+                                    status: seatData.status,
+                                    isReservedByCurrentUser: true,
+                                    remainingSeconds: seatData.remainingSeconds || 300,
+                                    expiresAt: seatData.expiresAt,
+                                }
+                                : s
+                        ));
+                    }
+                } catch (err) {
+                    // 실패 시 롤백 (제거)
+                    setSelectedSeats(prev => prev.filter(s => s.seatId !== seat.seatId));
+                    setError(err.message);
+                } finally {
+                    setIsReserving(false);
+                }
             }
         },
-        [
-            concertId,
-            selectedSeats,
-            refreshSeatStatuses,
-        ],
+        [concertId, selectedSeats, refreshSeatStatuses, capacityType],
     );
 
     const handleClearSelection = useCallback(async () => {
