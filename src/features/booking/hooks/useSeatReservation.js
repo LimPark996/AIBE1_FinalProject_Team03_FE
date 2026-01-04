@@ -270,6 +270,11 @@ export const useSeatReservation = (concertId, options = {}) => {
 
     const handleSeatClick = useCallback(
         async (seat) => {
+            console.log('🪑 클릭한 seat 객체:', seat);
+            console.log('🪑 현재 selectedSeats:', selectedSeats.map(s => ({
+                        seatId: s.seatId,
+                        remainingSeconds: s.remainingSeconds
+                    })));
             const isSelected = selectedSeats.some((s) => s.seatId === seat.seatId);
 
             if (!isSelected && selectedSeats.length >= 4) {
