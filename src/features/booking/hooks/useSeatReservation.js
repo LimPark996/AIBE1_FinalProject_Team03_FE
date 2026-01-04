@@ -32,6 +32,7 @@ export const useSeatReservation = (concertId, options = {}) => {
     const pollingManagerRef = useRef(null);
     const stablePollingManagerRef = useRef(null);
     const isStartingPollingRef = useRef(false);
+    const timerWasRunningRef = useRef(false);
 
     const MAX_SEATS_SELECTABLE = 4;
 
@@ -408,15 +409,20 @@ export const useSeatReservation = (concertId, options = {}) => {
     }, [selectedSeats, timer]);
 
     useEffect(() => {
-        if (timer <= 0) {
+        if (timer > 0) {
+            timerWasRunningRef.current = true;
+            const interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
+            return () => clearInterval(interval);
+        }
+
+        // 타이머가 "돌다가" 0이 됐을 때만 만료 처리
+        if (timer <= 0 && timerWasRunningRef.current) {
             if (selectedSeatsRef.current.length > 0) {
                 alert('선점 시간이 만료되었습니다.');
                 handleClearSelection().catch(console.error);
             }
-            return;
+            timerWasRunningRef.current = false;
         }
-        const interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
-        return () => clearInterval(interval);
     }, [timer, handleClearSelection]);
 
     useEffect(() => {
@@ -449,6 +455,14 @@ export const useSeatReservation = (concertId, options = {}) => {
             if (pollingManagerRef.current) {
                 pollingManagerRef.current.stopPolling();
             }
+            const seatsToRelease = selectedSeatsRef.current;  // ref로 최신 값 접근
+                    if (seatsToRelease.length > 0) {
+                        Promise.all(
+                            seatsToRelease.map(seat =>
+                                releaseSeat(concertId, seat.seatId).catch(console.error)
+                            )
+                        );
+                    }
             console.log('[AccessKey] 페이지 이탈. 액세스키를 폐기합니다.');
             invalidateAccessKey(concertId).catch((err) => {
                 console.warn(
